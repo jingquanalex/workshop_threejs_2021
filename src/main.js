@@ -19,9 +19,13 @@ renderer.setClearColor(new THREE.Color(0.3, 0.35, 0.4));
 // Append canvas to the html body
 document.body.appendChild(renderer.domElement);
 
-// Create a mesh out of a box geometry and a MeshBasicMaterial that is orange in color
+// Create a helper object to visualize the world axis
+const axesHelper = new THREE.AxesHelper(2);
+scene.add(axesHelper);
+
+// Create a mesh out of a box geometry and a MeshLambertMaterial that is orange in color
 const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshBasicMaterial({
+const material = new THREE.MeshLambertMaterial({
     color: new THREE.Color(1, 0.85, 0.43)
 });
 const meshTest = new THREE.Mesh(geometry, material);
@@ -29,7 +33,17 @@ const meshTest = new THREE.Mesh(geometry, material);
 // Add the mesh to the scene
 scene.add(meshTest);
 
+// Create an ambient light that is white in color and has a low intensity value
+const light = new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.2);
+scene.add(light);
 
+// Create a directional light that is white in color and has an intensity value of 1
+const directionalLight = new THREE.DirectionalLight(new THREE.Color(1, 1, 1), 1);
+
+// Set the direction light position
+directionalLight.position.set(1, 1, 1);
+
+scene.add(directionalLight);
 
 // Set the camera to position (0, 0, 5)
 camera.position.z = 5;
