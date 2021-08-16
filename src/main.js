@@ -9,10 +9,8 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 
 // Create the canvas and the webgl rendering context
 const renderer = new THREE.WebGLRenderer();
-
 // Set the viewport and canvas size to the current window dimension
 renderer.setSize(window.innerWidth, window.innerHeight);
-
 // Set a clear color so it's easier to catch errors
 renderer.setClearColor(new THREE.Color(0.3, 0.35, 0.4));
 
@@ -24,6 +22,22 @@ const controlOrbit = new THREE.OrbitControls(camera, renderer.domElement);
 // Create a helper object to visualize the world axis
 const axesHelper = new THREE.AxesHelper(2);
 scene.add(axesHelper);
+
+// Create an ambient light that is white in color and has a low intensity value
+const light = new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.2);
+scene.add(light);
+
+// Create a directional light that is white in color and has an intensity value of 1
+const directionalLight = new THREE.DirectionalLight(new THREE.Color(1, 1, 1), 1);
+
+// Set the direction light position
+directionalLight.position.set(1, 1, 1);
+
+// Create a helper object to visualize the directional light
+const helperLight = new THREE.DirectionalLightHelper(directionalLight, 0.5);
+scene.add(helperLight);
+
+scene.add(directionalLight);
 
 // Create a buffer geometry with vertices and normals that defines our unit box
 const geometry = new THREE.BufferGeometry();
@@ -92,25 +106,79 @@ geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
 
 
 // Use lambert shading for the mesh (N.L)
+// Note: Makes sure color vector is in the linear space before input into shaders (renderer will convert it back to sRGB space)
 const material = new THREE.MeshLambertMaterial({
-    color: new THREE.Color(1, 0.85, 0.43)
+    color: new THREE.Color(1, 0.85, 0.43).convertSRGBToLinear()
 });
-const meshTest = new THREE.Mesh(geometry, material);
 
-// Add the mesh to the scene
+// Create a custom shader to use as mesh material
+// Check out the list of predefined variables for the ShaderMaterial GLSL: https://threejs.org/docs/#api/en/renderers/webgl/WebGLProgram
+// A note on transforming normal vectors: https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/transforming-normals
+const materialLambert = new THREE.ShaderMaterial();
+
+// Define the vertex shader
+materialLambert.vertexShader = `
+    varying vec3 vNormal;
+
+    // Matrix to transform the normal vectors
+    uniform mat3 matNormal;
+
+    void main()
+    {
+        // Transform positional vertices from object space to clip space
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+        // Transform normal vectors based on the object's model matrix
+        vNormal = matNormal * normal;
+    }
+`;
+
+// Define the fragment shader
+materialLambert.fragmentShader = `
+    varying vec3 vNormal;
+
+    // Positional vector of the light object
+    uniform vec3 lightPosition;
+
+    // Color of the object (in linear space)
+    uniform vec3 objColor;
+
+    void main()
+    {
+        // Compute the diffuse term based on the lambert shading model (N . L)
+        // Make sure all vector components are normalized to get a normalized value
+        // Note: Clamp to positive dot product values
+        vec3 lightPos = normalize(lightPosition);
+        float sLambert = max(dot(vNormal, lightPos), 0.0);
+
+        // A simple ambient + diffuse (lambert) shading model
+        // More info: https://learnopengl.com/Lighting/Basic-Lighting
+        vec3 ambient = vec3(0.2);
+        vec3 diffuse = vec3(sLambert);
+        vec3 color = (ambient + diffuse) * objColor;
+        gl_FragColor = vec4(color, 1);
+    }
+`;
+
+// Define the uniforms used in the shaders
+materialLambert.uniforms = {
+    matNormal: {
+        value: new THREE.Matrix3()
+    },
+    lightPosition: {
+        value: directionalLight.position
+    },
+    objColor: {
+        // Note: Makes sure color vector is in the linear space before input into shaders (renderer will convert it back to sRGB space)
+        value: new THREE.Color(1, 0.85, 0.43).convertSRGBToLinear()
+    }
+};
+
+// Create the box mesh and add it to the scene
+const meshTest = new THREE.Mesh(geometry, materialLambert);
 scene.add(meshTest);
 
-// Create an ambient light that is white in color and has a low intensity value
-const light = new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.2);
-scene.add(light);
 
-// Create a directional light that is white in color and has an intensity value of 1
-const directionalLight = new THREE.DirectionalLight(new THREE.Color(1, 1, 1), 1);
-
-// Set the direction light position
-directionalLight.position.set(1, 1, 1);
-
-scene.add(directionalLight);
 
 // Set the camera to position (0, 0, 5)
 camera.position.z = 5;
@@ -118,6 +186,10 @@ camera.position.z = 5;
 // The rendering loop
 const animate = function () {
     requestAnimationFrame(animate);
+
+    // Compute the normal transformation matrix and update the matNormal uniform value, per frame
+    const matNormal = new THREE.Matrix3().setFromMatrix4(meshTest.matrix).invert().transpose();
+    materialLambert.uniforms["matNormal"].value = matNormal;
 
     // Rotate the mesh in the x and y axis every frame
     meshTest.rotation.x += 0.01;
