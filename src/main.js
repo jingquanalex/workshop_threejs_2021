@@ -19,12 +19,79 @@ renderer.setClearColor(new THREE.Color(0.3, 0.35, 0.4));
 // Append canvas to the html body
 document.body.appendChild(renderer.domElement);
 
+const controlOrbit = new THREE.OrbitControls(camera, renderer.domElement);
+
 // Create a helper object to visualize the world axis
 const axesHelper = new THREE.AxesHelper(2);
 scene.add(axesHelper);
 
-// Create a mesh out of a box geometry and a MeshLambertMaterial that is orange in color
-const geometry = new THREE.BoxGeometry();
+// Create a buffer geometry with vertices and normals that defines our unit box
+const geometry = new THREE.BufferGeometry();
+
+// // Define the 8 vertices of the box
+// const vertices = new Float32Array([
+//     -0.5, 0.5, -0.5,    // 0 // top
+//     -0.5, 0.5, 0.5,     // 1
+//     0.5, 0.5, 0.5,      // 2
+//     0.5, 0.5, -0.5,     // 3
+
+//     -0.5, -0.5, -0.5,   // 4 // bottom
+//     -0.5, -0.5, 0.5,    // 5
+//     0.5, -0.5, 0.5,     // 6
+//     0.5, -0.5, -0.5,    // 7
+// ]);
+
+// // Index pointing to a vertex in the vertices list, forming two triangles per face of the cube
+// // Triangle winding order is counter-clockwise
+// const indices = [
+//     0, 4, 5, 5, 1, 0,   // -X
+//     5, 4, 7, 7, 6, 5,   // -Y
+//     0, 3, 7, 7, 4, 0,   // -Z
+//     2, 6, 7, 7, 3, 2,   // +X
+//     0, 1, 2, 2, 3, 0,   // +Y
+//     2, 1, 5, 5, 6, 2,   // +Z
+// ];
+// geometry.setIndex(indices);
+
+// List of 3 component (xyz) vertices defining two triangles per face of the cube
+// Triangle winding order is counter-clockwise
+const vertices = new Float32Array([
+    -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5,     // -X
+    -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5,
+    -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5,     // -Y
+    0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5,
+    -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5,       // -Z
+    0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5,
+    0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5,         // +X
+    0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5,
+    -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5,         // +Y
+    0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5,
+    0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5,         // +Z
+    -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5,
+]);
+
+// Define normals for each triangle face, so that the cube faces are outwards
+const normals = new Float32Array([
+    -1, 0, 0, -1, 0, 0, -1, 0, 0,   // -X
+    -1, 0, 0, -1, 0, 0, -1, 0, 0,
+    0, -1, 0, 0, -1, 0, 0, -1, 0,   // -Y
+    0, -1, 0, 0, -1, 0, 0, -1, 0,
+    0, 0, -1, 0, 0, -1, 0, 0, -1,   // -Z
+    0, 0, -1, 0, 0, -1, 0, 0, -1,
+    1, 0, 0, 1, 0, 0, 1, 0, 0,      // +X
+    1, 0, 0, 1, 0, 0, 1, 0, 0,
+    0, 1, 0, 0, 1, 0, 0, 1, 0,      // +Y
+    0, 1, 0, 0, 1, 0, 0, 1, 0,
+    0, 0, 1, 0, 0, 1, 0, 0, 1,      // +Z
+    0, 0, 1, 0, 0, 1, 0, 0, 1,
+]);
+
+// Set the positional and normal vertex attributes
+geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+
+
+// Use lambert shading for the mesh (N.L)
 const material = new THREE.MeshLambertMaterial({
     color: new THREE.Color(1, 0.85, 0.43)
 });
