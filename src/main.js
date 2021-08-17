@@ -215,7 +215,18 @@ materialLambert.uniforms = {
 const meshTest = new THREE.Mesh(geometry, materialLambert);
 scene.add(meshTest);
 
+// Import a gltf model
+// Source: https://sketchfab.com/3d-models/mar-saba-monastery-4bff096a20064d65b8af65ab8c51d9cf
+const loader = new THREE.GLTFLoader();
+loader.load("../gltf/scene.gltf", (gltf) => {
+    // Optional: Traverse the gltf scene and apply our material to all mesh objects
+    // gltf.scene.traverse((mesh) => {
+    //     if (mesh.isMesh) mesh.material = materialLambert;
+    // });
 
+    // Add the gltf scene (i.e. it's associated mesh objects) to our scene
+    scene.add(gltf.scene);
+});
 
 // Set the camera to position (0, 0, 5)
 camera.position.z = 5;
