@@ -13,6 +13,8 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 // Set a clear color so it's easier to catch errors
 renderer.setClearColor(new THREE.Color(0.3, 0.35, 0.4));
+// Set renderer to automatically covert output colors to sRGB space
+renderer.outputEncoding = THREE.sRGBEncoding;
 
 // Append canvas to the html body
 document.body.appendChild(renderer.domElement);
@@ -100,15 +102,37 @@ const normals = new Float32Array([
     0, 0, 1, 0, 0, 1, 0, 0, 1,
 ]);
 
+const texcoords = new Float32Array([
+    0, 1, 0, 0, 1, 0,   // -X
+    1, 0, 1, 1, 0, 1,
+    0, 0, 0, 1, 1, 1,   // -Y
+    1, 1, 1, 0, 0, 0,
+    1, 1, 0, 1, 0, 0,   // -Z
+    0, 0, 1, 0, 1, 1,
+    0, 1, 0, 0, 1, 0,   // +X
+    1, 0, 1, 1, 0, 1,
+    0, 1, 0, 0, 1, 0,   // +Y
+    1, 0, 1, 1, 0, 1,
+    1, 1, 0, 1, 0, 0,   // +Z
+    0, 0, 1, 0, 1, 1
+]);
+
 // Set the positional and normal vertex attributes
 geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
 geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+geometry.setAttribute("uv", new THREE.Float32BufferAttribute(texcoords, 2));
 
+// Load a texture image
+const texture = new THREE.TextureLoader().load("../texture/dirt.png");
+texture.encoding = THREE.sRGBEncoding;
+texture.magFilter = THREE.NearestFilter;
+texture.minFilter = THREE.NearestFilter;
 
 // Use lambert shading for the mesh (N.L)
 // Note: Makes sure color vector is in the linear space before input into shaders (renderer will convert it back to sRGB space)
 const material = new THREE.MeshLambertMaterial({
-    color: new THREE.Color(1, 0.85, 0.43).convertSRGBToLinear()
+    color: new THREE.Color(1, 0.85, 0.43).convertSRGBToLinear(),
+    map: texture
 });
 
 // Create a custom shader to use as mesh material
@@ -119,6 +143,7 @@ const materialLambert = new THREE.ShaderMaterial();
 // Define the vertex shader
 materialLambert.vertexShader = `
     varying vec3 vNormal;
+    varying vec2 vUv;
 
     // Matrix to transform the normal vectors
     uniform mat3 matNormal;
@@ -130,18 +155,25 @@ materialLambert.vertexShader = `
 
         // Transform normal vectors based on the object's model matrix
         vNormal = matNormal * normal;
+
+        // Pass vertex uv to fragment
+        vUv = uv;
     }
 `;
 
 // Define the fragment shader
 materialLambert.fragmentShader = `
     varying vec3 vNormal;
+    varying vec2 vUv;
 
     // Positional vector of the light object
     uniform vec3 lightPosition;
 
     // Color of the object (in linear space)
     uniform vec3 objColor;
+
+    // Diffuse texture
+    uniform sampler2D sDiffuse;
 
     void main()
     {
@@ -153,9 +185,11 @@ materialLambert.fragmentShader = `
 
         // A simple ambient + diffuse (lambert) shading model
         // More info: https://learnopengl.com/Lighting/Basic-Lighting
+        vec4 texDiffuse = texture(sDiffuse, vUv);
+        texDiffuse = (texDiffuse);
         vec3 ambient = vec3(0.2);
         vec3 diffuse = vec3(sLambert);
-        vec3 color = (ambient + diffuse) * objColor;
+        vec3 color = (ambient + diffuse) * objColor * texDiffuse.rgb;
         gl_FragColor = vec4(color, 1);
     }
 `;
@@ -171,6 +205,9 @@ materialLambert.uniforms = {
     objColor: {
         // Note: Makes sure color vector is in the linear space before input into shaders (renderer will convert it back to sRGB space)
         value: new THREE.Color(1, 0.85, 0.43).convertSRGBToLinear()
+    },
+    sDiffuse: {
+        value: texture
     }
 };
 
@@ -192,8 +229,8 @@ const animate = function () {
     materialLambert.uniforms["matNormal"].value = matNormal;
 
     // Rotate the mesh in the x and y axis every frame
-    meshTest.rotation.x += 0.01;
-    meshTest.rotation.y += 0.01;
+    // meshTest.rotation.x += 0.01;
+    // meshTest.rotation.y += 0.01;
 
     // Render the frame, defined by the threejs camera in the scene
     renderer.render(scene, camera);
