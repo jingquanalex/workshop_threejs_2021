@@ -24,7 +24,7 @@ Participate in a hands-on implementation walkthrough of the covered rendering co
 
 # Implementation walkthrough
 
-This walkthrough is split into several parts, each building on top of the previous part. In each part, we will learn about a feature of three.js or a rendering concept, and implement it in code. The starting code is provided in each part in the ./src folder.
+This walkthrough is split into several parts, each building on top of the previous part. In each part, we will learn about a feature of three.js or a rendering concept, and implement it in code. The starting code is provided in each part in the [./src](./src/) folder.
 
 ### Overview
 
@@ -47,6 +47,7 @@ We will use the VSCode extension 'Live Server' to host our three.js webpage and 
 - Create a new directory for your three.js project and navigate to it (Open Folder... in VSCode).
 - We can use the npm package manager (install via Node.js: https://nodejs.org/en/download/) to retrieve the three.js source code into the current directory using the following command: `npm i three` in the VSCode terminal (Ctrl + `).
 - Create a 'media' folder where we will store 3D models and textures, as well as a 'src' folder to store our source code.
+- [Download](./download/media.zip) the media content and place in the 'media' folder.
 
 Your project folder structure should now look like:
 > - node_modules
@@ -56,11 +57,11 @@ Your project folder structure should now look like:
 
 ### Part 2: Initialize three.js
 
-We will now create the HTML webpage that will run some javascript to initialize three.js, the WebGL rendering context, and set up the components for our three.js scene. You may obtain the starting code from the ./src/part1 folder or from the following sections.
+We will now create the HTML webpage that will run some javascript to initialize three.js, the WebGL rendering context, and set up the components for our three.js scene. You may obtain the starting code from the [./src/part1](./src/part1) folder or copy the code below.
 
 > Note: Make sure that the relative paths to fetch your script files within the HTML script tags or media files specified in your javascript are correct.
 
-- Create an 'index.html' file in the src folder (./src/) and add the following code:
+- Create an 'index.html' file in the [./src](./src/) folder and add the following code:
 ```html
 <!DOCTYPE html>
 <html>
@@ -86,12 +87,24 @@ We will now create the HTML webpage that will run some javascript to initialize 
 
 When the webpage is loaded, the scripts in the body section of the HTML are executed. The three.js script imports all of the three.js library objects (e.g. Scene, PerspectiveCamera, BoxGeometry, DirectionalLight...) used for rendering, which we can later call in our main.js script.
 
-- Create a 'main.js' file in the src folder (./src/) and add the following code sections:
+- Create a 'main.js' file in the [./src](./src/) folder and add the following code sections:
 
 ```javascript
-// Code from three.js docs, Getting Started
-// https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene
+// Create the webgl rendering context
+const renderer = new THREE.WebGLRenderer();
+// Set the viewport size to the current window dimension
+renderer.setSize(window.innerWidth, window.innerHeight);
+// Set a clear color so it's easier to catch errors
+renderer.setClearColor(new THREE.Color(0.3, 0.35, 0.4));
+// Set renderer to automatically covert output colors to sRGB space
+renderer.outputEncoding = THREE.sRGBEncoding;
+// Add the rendering context canvas to the html body
+document.body.appendChild(renderer.domElement);
+```
 
+We first create the WebGL rendering context, define the renderer size, the color to clear fragments, and the color space encoding type of the output, and append the renderer DOM element to the HTML body. The size of the renderer is also the size of the renderer viewport (in the `<canvas>` tag), as well as the framebuffer size that images are rendered into.
+
+```javascript
 // The threejs scene manager
 const scene = new THREE.Scene();
 ```
@@ -108,20 +121,6 @@ The `PerspectiveCamera` object defines a perspective camera with a field of view
 
 > Check out the tutorial here for a refresher of coordinate systems and transformation matrices: https://learnopengl.com/Getting-started/Coordinate-Systems
 
-```javascript
-// Create the webgl rendering context
-const renderer = new THREE.WebGLRenderer();
-// Set the viewport size to the current window dimension
-renderer.setSize(window.innerWidth, window.innerHeight);
-// Set a clear color so it's easier to catch errors
-renderer.setClearColor(new THREE.Color(0.3, 0.35, 0.4));
-// Set renderer to automatically covert output colors to sRGB space
-renderer.outputEncoding = THREE.sRGBEncoding;
-// Add the rendering context canvas to the html body
-document.body.appendChild(renderer.domElement);
-```
-
-Finally, we create the WebGL rendering context and append it to the HTML body. We define the renderer viewport size, the color to clear fragments, and the color space encoding type of the output.
 
 ```javascript
 // Create a Threejs box mesh to compare with our rendering result
@@ -176,13 +175,29 @@ At the end of the javascript, we call the animate function.
 
 ![figure](/media/docs/p2.png)
 
-You should see a spinning yellow cube.
+Let's launch the VSCode Live Server to see our three.js renderer in action.
+
+- Press `F1` in VSCode to open the command palette and type `live server`. Select the option to open the current file with Live Server: `Open with Live Server`.
+
+![figure](/media/docs/p1a.png)
+
+Visit the webpage at localhost and navigate to the `/src` folder where your `index.html` is at (http://127.0.0.1:5500/src/). You should see a spinning yellow cube.
+
+In the VSCode status bar on the right, you can see the button to close or launch your live server and the port the webpage is hosted at. Currently the port is at 5500.
+
+![figure](/media/docs/p1b.png)
 
 # Part 2: Lambert shading model and camera controls
 
 In this section, we will explore the Lambertian shading model and shade our cube using the three.js defined `MeshLambertMaterial`. We will also set up our camera as an orbit camera and enable mouse control for it.
 
-- Place the following code after your camera object:
+To import the three.js `OrbitControls` object, call the following script after the three.js script in the `index.html` body:
+
+```html
+<script src="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
+```
+
+- Go back to the `main.js` and place the following code after your camera object:
 
 ```javascript
 // Add orbit camera controls to the camera (js event assigned)
