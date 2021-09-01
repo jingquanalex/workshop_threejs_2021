@@ -117,7 +117,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 camera.position.z = 5;
 ```
 
-The `PerspectiveCamera` object defines a perspective camera with a field of view parameter, an aspect ratio, and the distance to the near and far plane from the camera origin. These parameters form the viewing frustum of the camera and it defines the view matrix that transforms vertex position coordinates from world to view space. We will set the camera position to (0, 0, 5) and facing the direction (0, 0, -1).
+The `PerspectiveCamera` object defines a perspective camera with a field of view parameter, an aspect ratio, and the distance to the near and far plane from the camera origin. We will set the camera position to (0, 0, 5) and it will face the (0, 0, -1) direction by default. These parameters form the viewing frustum of the camera and it defines the view matrix and the projection matrix used to transforms mesh vertices.
 
 > Check out the tutorial here for a refresher of coordinate systems and transformation matrices: https://learnopengl.com/Getting-started/Coordinate-Systems
 
@@ -167,21 +167,19 @@ window.addEventListener("resize", onWindowResize);
 animate();
 ```
 
-The animate function defines the rendering loop that repeats itself via `requestAnimationFrame(animate)`. It renders fragments defined by the scene and camera setup and outputs the rendered frame image into the frame buffer. We can write code that changes the rendering parameters every frame, such as transforming an object or updating the uniform variables in a material shader.
+The animate function defines the rendering loop that repeats itself via `requestAnimationFrame(animate)`. It renders a frame defined by the scene objects (geometry, material, lights etc.) and the camera, and outputs the RGB fragment results into the framebuffer and displays it in the viewport. We can write code that changes the rendering and object parameters every frame, such as transforming (e.g. translating, rotating, scaling) mesh objects or updating the uniform variables in material shaders.
 
-We defined the event listener `resize` that calls the onWindowResize function when the browser window is resized. In this function, we resize the viewport based on the window dimensions. We also set our camera's aspect ratio to match the window dimensions. Since the camera projection parameter is changed, we have to recompute the camera projection matrix.
-
-At the end of the javascript, we call the animate function.
-
-![figure](/media/docs/p2.png)
+We also defined the event listener `"resize"` that calls the onWindowResize function when the browser window is resized. In this function, we resize the viewport based on the current window dimensions, and set the camera's aspect ratio to match the dimension of the window. Since the camera projection parameter is changed, we have to recompute the camera projection matrix to pass to shaders. At the end of the javascript, we call the animate function to get the rendering loop going.
 
 Let's launch the VSCode Live Server to see our three.js renderer in action.
 
-- Press `F1` in VSCode to open the command palette and type `live server`. Select the option to open the current file with Live Server: `Open with Live Server`.
+- Press `F1` in VSCode to open the command palette and type `live server`. Then, select the option to launch Live Server: `Open with Live Server`.
 
 ![figure](/media/docs/p1a.png)
 
-Visit the webpage at localhost and navigate to the `/src` folder where your `index.html` is at (http://127.0.0.1:5500/src/). You should see a spinning yellow cube.
+Visit the webpage at the localhost (at default port 5500) and navigate to the `/src` folder where your `index.html` is at (http://127.0.0.1:5500/src/). You should see a spinning yellow cube.
+
+![figure](/media/docs/p2.png)
 
 In the VSCode status bar on the right, you can see the button to close or launch your live server and the port the webpage is hosted at. Currently the port is at 5500.
 
@@ -191,13 +189,15 @@ In the VSCode status bar on the right, you can see the button to close or launch
 
 In this section, we will explore the Lambertian shading model and shade our cube using the three.js defined `MeshLambertMaterial`. We will also set up our camera as an orbit camera and enable mouse control for it.
 
-To import the three.js `OrbitControls` object, call the following script after the three.js script in the `index.html` body:
+- To import the three.js `OrbitControls` object, call the following script after the three.js script in the `index.html` body:
 
 ```html
 <script src="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
 ```
 
-- Go back to the `main.js` and place the following code after your camera object:
+The `OrbitControls.js` script that defines the `OrbitControls` object located in the `three/examples/js/controls/` folder.
+
+- Go back to the `main.js` and place the following code after your camera and renderer object:
 
 ```javascript
 // Add orbit camera controls to the camera (js event assigned)
@@ -208,21 +208,18 @@ const axesHelper = new THREE.AxesHelper(2);
 scene.add(axesHelper);
 ```
 
-Also add the `OrbitControls.js` script that defines the `OrbitControls` object located in the `three/examples/js/controls/` folder.
-
-The three.js `OrbitControls` transforms the defined camera into an orbit camera and sets up the mouse input event functions. To visualize our orientation in the world, we can add an `AxesHelper` that draws a red, green, and blue line respective to the X, Y, and Z global axis, that is 2 unit in length.
+The three.js `OrbitControls` adapts the specified camera into an orbit camera and sets up the event functions for mouse controls. To visualize the camera's orientation in the world, we can add an `AxesHelper` that draws a red, green, and blue line respective to the global X, Y, and Z axis, that is 2 units in length.
 
 Three.js has already defined several helper objects that can help you visualize a bounding box, camera frustum, lights, as well as drawing arrows and grids.
 
-> `OrbitControls` https://threejs.org/docs/?q=OrbitControls#examples/en/controls/OrbitControls
-
-> `AxesHelper` https://threejs.org/docs/?q=helper#api/en/helpers/AxesHelper
+> - `OrbitControls` https://threejs.org/docs/?q=OrbitControls#examples/en/controls/OrbitControls
+> - `AxesHelper` https://threejs.org/docs/?q=helper#api/en/helpers/AxesHelper
 
 ![figure](/media/docs/p3.png)
 
-You can now see the global axis visualization at the origin, and you can rotate or pan the camera by holding Left or Right click and dragging, and move the camera forward and backward using the mouse wheel by holding and dragging or scrolling.
+You can now see the global axis visualization stemming from the scene origin (0,0,0). Rotate the camera using `Left Click + Drag`, pan the camera using `Right Click + Drag`, and dolly the camera forward and backward by rolling the `Mouse Wheel` or by holding `Mouse Wheel + Drag`.
 
-- Now let's add two lights in the scene to lit the object with a Lambert material shader.
+- Now let's add two lights in the scene and shader the cube with a Lambert material shader.
 
 ```javascript
 // Create an ambient light that is white in color and has a low intensity value
@@ -237,14 +234,14 @@ directionalLight.position.set(1, 1, 1);
 scene.add(directionalLight);
 ```
 
-The first light object `AmbientLight` is a constant, global light, with parameters defining a white color and an intensity value of 0.2. It uniformly lights an object in all directions, providing a rough estimation of all incoming light rays that hit the surface of the object.
+The first light object `AmbientLight` is a constant, global light, with parameters defining a white color and an intensity value of 0.2. It uniformly lights object from all directions, providing a rough estimation of global incoming light hitting the surface of the object.
 
-The second light object `DirectionalLight` imitates an infinitely faraway light source, with parameters defining a white color and an intensity value of 1. The direction of the light vector is defined by the position of the object, which is set to (1, 1, 1). This light vector defines the direction of light rays hitting the surface of an object, and is used in many shading equations to compute the reflected color value at the particular surface.
+The second light object `DirectionalLight` imitates an infinitely faraway light source, with parameters defining a white color and an intensity value of 1. The direction of the light vector is defined by the position of the light object, which is set to (1, 1, 1). This light vector defines the direction of light rays hitting the surface of a mesh, and is used in many shading equations to compute the light intensity value at a particular mesh surface.
 
 > ![figure](/media/docs/p4.png)
 > Source: https://learnopengl.com/Lighting/Light-casters
 
-- We also visualize where the direction light is pointing by adding a `DirectionalLightHelper` with a size value of 0.2:
+- We can also visualize the direction vector of the `DirectionalLight` object by adding a `DirectionalLightHelper` with a size value of 0.2:
 
 ```javascript
 // Create a helper object to visualize the directional light
@@ -264,18 +261,20 @@ const materialLambert = new THREE.MeshLambertMaterial({
 });
 ```
 
-The Lambertian shading model defines a simple function to calculate reflected light values for a perfectly diffuse surface. It can be used to render a rough-looking appearance for materials like wood or stone. The reflected light value at a surface location is calculated from the dot product of the surface normal N and the light vector L (N dot L). 
+The Lambertian shading model defines a simple function to calculate reflected light values for a perfectly diffuse mesh surface. It can be used to render a rough-looking appearance for materials like wood or stone. The reflected light intensity value at a surface location is computed by the dot product of the surface normal N (at that surface location) and the light vector L (N dot L). 
 
 In some text, the angle between the normal and light vectors is cos θ.
 
 > ![figure](/media/docs/p5.png)
 > Source: https://learnopengl.com/Lighting/Basic-Lighting
 
-In three.js, the `MeshLambertMaterial` evaluates the reflected light value per-vertex (i.e. at each vertex of the mesh), and the resulting values are interpolated across the fragments the vertices spans. We set the color of the material to yellow.
+In three.js, the `MeshLambertMaterial` evaluates the reflected light value per-vertex (i.e. at each vertex of the mesh), and the reflected light intensity values at each vertex are interpolated across the fragments that the triangle primitive spans. We also set the color of the material to yellow and convert the color value to linear color space.
 
 > `MeshLambertMaterial` https://threejs.org/docs/?q=meshla#api/en/materials/MeshLambertMaterial
 
-- We modify the `meshBox` object to use our newly created `materialLambert`:
+> Check out the applet for a visualization of dot product: https://www.falstad.com/dotproduct/
+
+- Finally, we modify the `meshBox` object we have created to use the `MeshLambertMaterial`:
 
 ```javascript
 // Create the Threejs box mesh that uses MeshLambertMaterial
@@ -284,23 +283,32 @@ const meshBox = new THREE.Mesh(geometryBox, materialLambert);
 
 ![figure](/media/docs/p7.png)
 
-The result of this part is a shaded yellow cube, with helpers visualizing the global axis and the directional light, as well as a fully controllable orbit camera.
+The result of this part is a shaded yellow cube, with helpers visualizing the global axis and the directional light, as well as a fully controllable orbit camera. Notice that the light intensity on the object surface is greater when the surface normal vector is more aligned with the light direction vector.
 
 # Part 3: Creating a cube with vertex and index buffers
 
-Now let's create our cube mesh object by specifying our own `BufferGeometry` instead of using three.js's `BoxGeometry`. We want to make our cube appear identical in rendering with the `BoxGeometry` mesh. Geometries in 3D graphics are commonly formed and represented using triangle primitives. Each triangle is defined by three vertices in a 3D Cartesian coordinate space, and each vertex defines an XYZ coordinate.
+Now let's create our cube mesh object by specifying our own `BufferGeometry` instead of using three.js's `BoxGeometry`. We want to make our cube geometry appear identical to the three.js box geometry. Geometries in 3D graphics are often formed and represented using triangle primitives. Each triangle is defined by three vertices in a 3D Cartesian coordinate space, and each vertex defines an XYZ coordinate.
 
-To send vertex data to the GPU rasterization pipeline for rendering, we store the vertices in an array buffer. By default, 
-3 consecutive vertices will specify a triangle face, and the winding order of the triangle vertices will result in either a front or back face. In three.js, having a counter-clockwise winding order will result in a face that is oriented towards the camera.
+Vertices are stored in an array buffer, and sent to the graphics (or rasterization) pipeline for rendering. By default, 3 consecutive vertices in the array buffer will define a triangle face, and the winding order of the triangle vertices will result in either a front or back face. In three.js, having a counter-clockwise winding order will result in a face that is oriented at the +Z axis towards the camera.
 
 > ![figure](/media/docs/p8.png)
 > Source: https://learnopengl.com/Getting-started/Hello-Triangle
 
-The figure shows how triangle data is stored in the vertex array. We can also address three index locations in the vertex array to form a triangle, and this allows for greater flexibility for us to define triangles and it may also reduce the size of vertex data if vertices are shared between triangles.
+Optional: Set the `MeshLambertMaterial`'s wireframe property to `true` to visualize the triangles that forms the cube mesh:
+```javascript
+const materialLambert = new THREE.MeshLambertMaterial({
+    color: new THREE.Color(1, 0.85, 0.43).convertSRGBToLinear(),
+    wireframe: true
+});
+```
+
+![figure](/media/docs/p8a.png)
+
+The illustration shows how triangle vertices are stored in the vertex array buffer. We can also use an index array buffer  to address vertices in the vertex array buffer to create triangles. This avoids duplicates of triangle vertices in the vertex buffer and it reduces the size of vertex data for complex meshes.
 
 ![figure](/media/docs/vertex.png)
 
-For example, to represent the quad depicted above, we can specify the XY vertices of the two triangles that form it.
+For example, to depict the quad, we have to specify the 6 vertices of the two triangles that form the quad.
 
 ```javascript
 const vertices = new Float32Array([
@@ -310,7 +318,6 @@ const vertices = new Float32Array([
     -0.5, -0.5,     // 1     // Triangle 2
      0.5, -0.5,     // 2
      0.5,  0.5      // 3
-      
 ]);
 ```
 
@@ -326,27 +333,31 @@ const vertices = new Float32Array([
 
 const indices = [
     0, 1, 3,        // Triangle 1
-    1, 2, 3,        // Triangle 2
+    3, 1, 2,        // Triangle 2
 ];
 ```
 
-Then, the index and vertex attribute data for a geometry object can be accessed by the mesh's material shader for rendering like so. Since the vertex array has a 32bit floating point type (`Float32Array`), we store this array in a `Float32BufferAttribute` container and specify the size of each vertex component, which is 2. Then we bind this attribute buffer to the `"position"` shader attribute. Later in the vertex shader, you can access this position data at each vertex.
-
-To set the index data, you can simply call the `setIndex` function.
+To pass the vertex and index buffers to the graphics pipeline, we have to set the array buffers for each vertex attribute, or set the index buffer. Since the vertex array has a 32bit floating point type (`Float32Array`), we store this array in a `Float32BufferAttribute` container and specify the size of each vertex component, which is 2. Then we bind this index array buffer to the `"position"` vertex attribute. Later in the vertex shader, you can access this 2 component (XY) position data per vertex.
 
 ```javascript
 // Set the positional vertex attribute
 geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 2));
+```
 
+To set the index data, call the `setIndex` function.
+
+```javascript
 // Set the index array buffer
 geometry.setIndex(indices);
 ```
 
- - Now, define our cube geometry using the `BufferGeometry` object and set the vertex data to the `"position"` vertex attribute. We will use an index array as well. Use the figure below as a guide to creating your unit cube geometry. A unit cube has a length of 1, and we want to have the cube's center at the (0,0,0) origin.
- - I have provided the template to create the custom cube using the `BufferGeometry` object.
- - Start by defining the coordinates for the 8 vertex positions.
- - Then, specify 3 indices in a counter-clockwise order to form a triangle. Two triangles will form a side of the cube, and we want each side of the cube to be facing outwards so that they are visible to the camera.
- - The backsides of the cube may be tricky to imagine! Check out your rendering result to see if you got it right.
+It's time for a challenge:
+- Define the cube geometry using the `BufferGeometry` object and set the vertex data to the `"position"` vertex attribute. We will use an index array as well. Use the figure below as a guide to create your unit cube geometry. A unit cube has a length of 1, and we want to have the cube's center at the origin (0,0,0).
+- Below is the template to create your cube geometry by filling the vertices and indices array for the `BufferGeometry` object.
+- Start by defining the coordinates for the 8 vertex positions of the unit cube.
+- Then, specify 3 indices in a counter-clockwise order to form a triangle. Two triangles will form a side of the cube, and we want each side of the cube to be facing outwards so that they are visible to the camera.
+- The backfacing sides of the cube may be tricky to imagine! Check out your rendering result to see if you got them right.
+- Note that +Z axis is pointing towards you, and -Z axis is pointing away from you.
 
  ![figure](/media/docs/cube.png)
 
@@ -379,11 +390,11 @@ const indices = [
 ];
 geometryBoxCustom.setIndex(indices);
 
-// Set the positional vertex attribute
+// Set the positional vertex attribute, it has 3 components (XYZ)
 geometryBoxCustom.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
 ```
 
-Remember to replace the three.js box geometry `geometryBox` with your custom one. Since we have not defined the normals for the cube vertices, the box will appear black as `MeshLambertMaterial` requires the normal component to compute reflected light values. For now, let's just set it to use the basic color material `MeshBasicMaterial`.
+At the end, replace the cube mesh geometry with your custom one `geometryBoxCustom`. Since we have not defined the normals for the cube vertices, the box will appear black as `MeshLambertMaterial` requires the normal component to compute reflected light values. For now, let's just set the cube mesh to use the basic color material `MeshBasicMaterial`.
 
 ```javascript
 // Create a custom Threejs box mesh that uses materialBasic
@@ -422,13 +433,13 @@ const indices = [
 ];
 ```
 
-As you have noticed, applying `MeshLambertMaterial` will result in a black cube. It is because the normal vectors for each triangle vertex have not been specified, and hence the Lambert shading model computation (N dot L) will result in a 0 value. You can find how the Lambert material fragment shader is formed in the next section. For now, let's define the normal vertex attributes for each vertex of the cube.
+As you have noticed before, applying `MeshLambertMaterial` to the cube will result in a black color. It is because the normal vectors for each triangle vertex have not been defined, therefore, the Lambert shading model (N dot L) will produce a 0 value. You can find out how the Lambert shading model is defined in the fragment shader in the next section. For now, let's define the normal vertex attributes for each vertex of the cube.
 
-Unfortunately, if you use indices to specify normal vectors like how you have described vertices above, you will notice that triangles sharing the same vertex will have the same normal vector, even though the triangles are facing different orientations. This results in a wrongly calculated reflected light value!
+Unfortunately, if you use indices to specify normal vectors like how you have described vertices above, you will notice that triangles sharing the same vertex will have the same normal vector, even though the triangles are facing different orientations. This results in a wrongly calculated light value for certain cube faces!
 
-To get around this, you will have to describe every triangle and its 3 vertices, along with other vertex attributes (e.g. normal, UV).
+To get around this, you will have to describe every triangle's 3 vertices, along with other vertex attributes (e.g. normal, UV texture coordinates).
 
-- Let's replace our vertex-index arrays with a new vertex array of all triangle vertices:
+- Let's replace our vertex and index arrays with a new vertex array defining all triangle vertices of the cube:
 
 ```javascript
 // List of 3 component (xyz) vertices defining two triangles per face of the cube
@@ -469,7 +480,7 @@ const normals = new Float32Array([
 ]);
 ```
 
-Then we set the `"normal"` attribute the same way we set the `"position"` attribute, and we specify 3 as the number of components (x, y, z) for each vertex:
+Then we set the `"normal"` vertex attribute the same way as we set the `"position"` vertex attribute, and we specify 3 as the number of components (x, y, z) for each vertex:
 
 ```javascript
 // Set the positional and normal vertex attributes
@@ -477,7 +488,7 @@ geometryBoxCustom.setAttribute("position", new THREE.Float32BufferAttribute(vert
 geometryBoxCustom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
 ```
 
-- Let's have two cube meshes places beside each other for comparison. The cube located at the origin will have your custom box geometry, and the other cube will use the three.js box geometry. Apply the lambert material to both.
+- Let's have two cube meshes placed beside each other for comparison. The cube located at the origin will be your custom box geometry, and the other cube will be the three.js box geometry. Apply the `MeshLambertMaterial` to both.
 
 ```javascript
 // Create the Threejs box mesh that uses MeshLambertMaterial
@@ -492,17 +503,19 @@ scene.add(meshBoxCustom);
 
 ![figure](/media/docs/p11.png)
 
-You should see the two cubes and they look exactly the same.
+You should see the two cubes with the same geometry and they look exactly the same.
 
 # Part 4: Lambert shader and custom vertex and fragment shaders
 
 In this part, we will write a custom Lambert material shader to create a rendering appearance similar to three.js's `MeshLambertMaterial`. Shaders are programs written in the GLSL language. The shader program has a vertex shader where the vertices of our meshes are transformed into the clip coordinate space and a fragment shader where lighting and color values are computed for each fragment (or pixel). Three.js defines a `ShaderMaterial` object in which you can specify a custom vertex shader, a fragment shader, and pass additional data to the two shaders using uniform variables.
 
-- Create a `ShaderMaterial` object for our cube:
+> An overview of the GPU rasterization pipeline from the input vertex data to the shaded pixels in the framebuffer: https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Introduction
 
-> - An overview of the GPU rasterization pipeline from the input vertex data to the shaded pixels in the framebuffer: https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Introduction
-> - Check out the list of predefined variables for the ShaderMaterial GLSL: https://threejs.org/docs/#api/en/renderers/webgl/WebGLProgram
-> - A note on transforming normal vectors: https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/transforming-normals
+> Check out the list of predefined variables for the ShaderMaterial GLSL: https://threejs.org/docs/#api/en/renderers/webgl/WebGLProgram
+
+> A note on transforming normal vectors: https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/transforming-normals
+
+- Create a `ShaderMaterial` object for our cube:
 
 ```javascript
 // Create a custom shader to use as mesh material
@@ -542,9 +555,6 @@ materialLambertCustom.fragmentShader = `
     uniform vec3 lightColor; // Directional light color
     uniform vec3 objColor; // Color of the object (in linear space)
 
-    // Diffuse texture
-    uniform sampler2D sDiffuse;
-
     void main()
     {
         // Compute the diffuse term based on the lambert shading model (N . L)
@@ -569,7 +579,7 @@ materialLambertCustom.fragmentShader = `
 
 ## The vertex shader
 
-The vertex shader takes in vertex data from the vertex array buffer and transforms mesh vertices from object space (also called model space) to clip space. Per-vertex data such as normal, texture coordinate (UV), and color are stored in vertex attribute arrays, and they are passed to the vertex shader using the attribute type that matches the assigned vertex attribute data. For example in three.js, position, normal, and UV are predefined in the shader, and you can also define your vertex attribute of a certain type like so:
+The vertex shader takes in vertex data from the vertex array buffer and transforms mesh vertices from object space (also called model space) to clip space. Per-vertex data such as normals, texture (UV) coordinates, and colors are stored in vertex attribute arrays, and they are passed to the vertex shader using the attribute type that matches the assigned vertex attribute data. For example in three.js, position, normal, and UV are predefined in the shader, and you can also define your vertex attribute of a certain type like so:
 
 ```glsl
 // pre-defined in three.js
@@ -577,7 +587,7 @@ attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv;
 
-// custom attribute
+// custom vertex attribute
 attribute int myObjectId;
 ```
 
@@ -592,7 +602,7 @@ geometry.setAttribute("myObjectId", new THREE.BufferAttribute(objectId, 1));
 
 > The shaders in the three.js are modular, and they have references to other shader modules including functions and variables, all constructed using three.js's `ShaderChunk`. Shader modules are called using the preprocessor: `#include <encodings_fragment>`
 
-Besides the `attribute` type qualifier, there are the `varying` and `uniform` type qualifiers in the vertex shader:
+Besides the `attribute` type qualifier in GLSL shaders, there also are the `varying` and `uniform` type qualifiers:
 
 ```glsl
 varying vec3 vNormal;
@@ -601,12 +611,12 @@ varying vec3 vNormal;
 uniform mat3 matNormal;
 ```
 
-> - An `attribute` variable holds a specific vertex attribute data (position, texture UV, color...) for a vertex.
-> - A `varying` variable passes data from the vertex to the fragment shader, and the value of the data is interpolated across the fragments that span the vertices of a triangle primitive (or other primitive types).
-> - A `uniform` variable is used to pass data to the shader, that can be used to change the parameters of your program. You can update the uniform variable via the associated three.js uniforms object value.
-> - More info: https://www.khronos.org/opengl/wiki/Type_Qualifier_(GLSL)
+- An `attribute` variable holds a specific vertex attribute data (position, normal, UV...) for a vertex.
+- A `varying` variable passes data from the vertex to the fragment shader, and the value of the data is interpolated across the fragments that span the vertices of a triangle primitive (or other primitive types).
+- A `uniform` variable is used to pass data to the shader, and you can update them every frame. Uniform variable are updated via the associated three.js uniforms object value.
+- More info: https://www.khronos.org/opengl/wiki/Type_Qualifier_(GLSL)
 
-At the end of the vertex shader, mesh vertices are expected to be transformed to clip space. Primitives that lie outside of this space will be clipped. Transformed vertices in clip space are passed to the predefined GLSL variable `gl_Position`, and in the subsequent rasterization stage, those vertices will be transformed to screen space.
+At the end of the vertex shader, mesh vertices are expected to be transformed to clip space. Primitives (i.e. points, lines, triangles) that lie outside of this space will be clipped. Transformed vertices in clip space are passed to the predefined GLSL variable `gl_Position`, and these vertices will be transformed to screen space in the subsequent rasterization graphics pipeline stages.
 
 > Here's the big picture of the coordinate spaces and transformation matrices used, and you can read up on how the camera projection and view matrices are derived: https://learnopengl.com/Getting-started/Coordinate-Systems
 
@@ -617,36 +627,42 @@ In the main shader program, we transform the mesh vertices (defined by the `posi
 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 ```
 
-We also need to pass the normal data for each vertex to the fragment shader to compute the Lambertian shading model (N.L) at each triangle surface. To do that, we use the `vNormal` variable with `varying` type, and directly pass the normal vertex attribute like so:
+We also need to pass the normal data for each vertex to the fragment shader to compute the Lambertian shading model (N.L) at each fragment surface. To do that, we use the `vNormal` variable with `varying` type, and directly pass the normal vertex attribute like so:
 
 ```glsl
 vNormal = normal;
 ```
 
-However, as the mesh object transforms (i.e. rotate, scale, and translate), its normal vectors have to be transformed as well. We will need to generate a dedicated transformation matrix to transform normals due to some geometry cases. Refer to the article in learnopengl.com (Section: One last thing) for more information: https://learnopengl.com/Lighting/Basic-Lighting or the article https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/transforming-normals.
+However, as the mesh object transforms by rotating or scaling, its normal vectors have to be transformed as well. We can simply transform the normal vectors using the `modelMatrix` that have the homogeneous coordinates (i.e. the translation portion of the matrix) discarded, provided that the scaling transformation is performed uniformly in all axis.
+
+```glsl
+// Transform normal vectors based on the object's model matrix
+vNormal = modelMatrix * normal;
+```
+
+It is a better practise to generate a dedicated normal transformation matrix to support non-uniform scaling in the 3 axis. The transformed normal will need to be normalized again. For more information, refer to the article in learnopengl.com (Section: One last thing): https://learnopengl.com/Lighting/Basic-Lighting or the article https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/transforming-normals.
 
 We will multiply the vertex normals with the dedicated normal transform matrix `matNormal`.
 
 ```glsl
 // Transform normal vectors based on the object's model matrix
-vNormal = matNormal * normal;
+vNormal = normalize(matNormal * normal);
 ```
 
-All vertex attribute data passed to the fragment shader via the `varying` type are interpolated across the vertices by default, and you can find more information in the note below.
+All vertex attribute data passed to the fragment shader via the `varying` type are interpolated across the vertices by default. This is performed by the non-programmable rasterization stage, between the vertex and fragment shader stage, where defined vertex attributes are interpolated across the triangle primitive and the interpolated values per fragment are accessable via the same variable name.
 
+More information in the link below:
 > ![figure](/media/docs/p12.png) Source: https://codeplea.com/triangular-interpolation
->
-> Between the vertex and fragment shader stage lies the non-programmable rasterization stage, where vertex position and other vertex attributes are interpolated across the triangle primitive to derive fragments values within the triangle.
 
 ## The fragment shader
 
-In the fragment shader, we receive the vertex attribute data using the same variable name:
+In the fragment shader, we receive the interpolated vertex attribute data using the same variable name:
 
 ```glsl
 varying vec3 vNormal;
 ```
 
-We also want to define some parameters for the lambert shading model, including the light direction vector, light intensity, color, and the diffuse color of the object.
+We also want to define some parameters for shading a diffuse object surface, including the light direction vector, light intensity, color, and the diffuse color of the object.
 
 ```glsl
 uniform float lightAmbientValue; // Ambient light intensity
@@ -655,7 +671,7 @@ uniform vec3 lightColor; // Directional light color
 uniform vec3 objColor; // Color of the object (in linear space)
 ```
 
-First, we ensure that the light position vector is normalized. We ensure the normal and the light vector are normalized so that the resulting value is within the range of 0 to 1 (normalized) as well. Since we know the normal vectors we provided as vertex attributes are normalized, we don't have to do it again, however, in some cases, you may need to renormalized vectors in the fragment shader even though it is already normalized in the vertex shader, due to interpolation.
+We need to ensure the normal and the light direction vector are normalized so that the computed lambert shading model (N dot L) is normalized as well (i.e. between 0 and 1).
 
 ```glsl
 // Compute the diffuse term based on the lambert shading model (N . L)
@@ -663,7 +679,7 @@ First, we ensure that the light position vector is normalized. We ensure the nor
 vec3 lightPos = normalize(lightPosition);
 ```
 
-The next line computes the reflected diffuse light value based on the Lambertian model, which depends on the geometry between the surface normal and the light vector. We have to clamp negative values to 0 as we don't want an illuminated surface when the light is coming from behind the surface.
+The next line computes the reflected diffuse light value based on the Lambertian shading model, as you recall, depends on the dot product between the surface normal and the light vector. We have to clamp negative values to 0 as we don't want an illuminated mesh surface when the light is coming from behind the surface.
 
 ```glsl
 // A simple ambient + diffuse (lambert) shading model
@@ -672,7 +688,7 @@ The next line computes the reflected diffuse light value based on the Lambertian
 float sLambert = max(dot(vNormal, lightPos), 0.0);
 ```
 
-To replicate the three.js `MeshLambertMaterial` shading result, we will use the ambient light, directional light, and the material uniform variables defined above. The ambient light and the diffuse light values are summed to produce the final intensity of the reflected light of each fragment (covering the mesh object surface), and this intensity value is multiplied with the object material color and the directional light color. The final color value is then written out to the fragment (via `gl_FragColor`) and drawn to the frame buffer.
+To replicate the three.js `MeshLambertMaterial` shading, we will use the ambient light, directional light, and the uniform variables defined above. The ambient light and the diffuse light values are summed to produce the final intensity of the reflected light, and this intensity value is multiplied by the object material's color and the directional light's color. The final color value is then written out to the fragment (via `gl_FragColor`) and drawn to the framebuffer.
 
 ```glsl
 float ambient = lightAmbientValue;
@@ -682,16 +698,16 @@ vec3 color = (ambient + diffuse) * objColor * lightColor;
 gl_FragColor = vec4(color, 1);
 ```
 
-One last thing in the shader code is to convert the fragment color value from linear to sRGB space:
+One last thing in the shader code is to convert the fragment color value in `gl_FragColor` from linear back to sRGB space:
 
 ```glsl
 // Convert fragment color from linear space back to sRGB space
 #include <encodings_fragment>
 ```
 
-We append the three.js shader chunk code to convert our `gl_FragColor` value from linear color space to sRGB color space. We want to ensure that all input color values (object color, light color, textures) are transformed into linear space, before performing computation on them. When the final fragment color is derived, we transform the color value back to sRGB space before outputting them to the frame buffer.
+We want to ensure that all input color values (e.g. object color, light color, sampled texture color) are transformed into linear space before performing computation using them.
 
-> Colors (RGB values) can be represented in many coordinate spaces. Some of the color space (or color encoding) takes into account the computer display's exponential gamma function. The problem arises when we compute color values in a non-linear space, resulting in an unexpected shift in color hue or intensity. For more information: https://learnopengl.com/Advanced-Lighting/Gamma-Correction
+> Colors (RGB values) can be represented in many coordinate spaces. Some of the color space (or color encoding) takes into account the computer display's exponential gamma function. The problem arises when we compute color values in a non-linear space, resulting in an erroneous color hue or intensity value. For more information: https://learnopengl.com/Advanced-Lighting/Gamma-Correction
 
 - Next, we need to define the uniform variable values in our `ShaderMaterial` object:
 
@@ -717,9 +733,9 @@ materialLambertCustom.uniforms = {
 };
 ```
 
-For each uniform matching the uniforms in the shaders, we pass a value of an appropriate type. We can update these values during runtime and the change in shading will be reflected in rendering. Now, we have to update the `matNormal` uniform to transform mesh normals as the mesh object transform (we have a rotating cube). 
+For each uniform matching the uniforms in the shaders, we pass a value of an appropriate type. We can update these values during runtime and the change in shading will be reflected in rendering. Now, we have to update the `matNormal` uniform to transform mesh normals as the mesh object transform (we have a rotating cube).
 
-- In the animate function, add the code to derive the normal transformation matrix:
+- In the animate function, add the code to derive and update the normal transformation matrix uniform:
 
 ```javascript
 // Compute the normal transformation matrix and update the matNormal uniform value, per frame
@@ -727,33 +743,37 @@ const matNormal = new THREE.Matrix3().setFromMatrix4(meshBoxCustom.matrix).inver
 materialLambertCustom.uniforms["matNormal"].value = matNormal;
 ```
 
-This normal transformation matrix is then passed to the `materialLambertCustom`'s `matNormal` uniform every frame.
+This normal transformation matrix is then passed to our custom shader material's `matNormal` uniform every frame.
 
-- To better test our custom Lambert material shader with three.js's version, let us create two knot-shaped meshes and apply the two different materials to them so that the meshes at the origin (position component x = 0) uses our custom geometry and material, and the meshes beside uses the three.js defined geometry and material.
+- To better test our custom Lambert material shader with three.js's `MeshLambertMaterial`, let's create two knot-shaped meshes and apply the two different materials. The meshes on the left will (position component x = 0) use our custom geometry and material, and the meshes the right will use the three.js defined geometry and material.
 
 ```javascript
-// Create a test knot geometry
+// Create a knot geometry
 const geometryKnot = new THREE.TorusKnotGeometry(1, 0.4, 80, 20);
 
 ...
 
-// Create a Threejs knot mesh that uses MeshLambertMaterial
+// Create a knot mesh that uses the MeshLambertMaterial
 const meshKnot = new THREE.Mesh(geometryKnot, materialLambert);
 meshKnot.position.set(5, 0, -3);
 scene.add(meshKnot);
 
-// Create a Threejs knot mesh that uses our material
+// Create a knot mesh that uses our material
 const meshKnotCustom = new THREE.Mesh(geometryKnot, materialLambertCustom);
 meshKnotCustom.position.set(0, 0, -3);
 scene.add(meshKnotCustom);
 
-// Create the Threejs box mesh that uses MeshLambertMaterial
+// Create the box mesh that uses the MeshLambertMaterial
 const meshBox = new THREE.Mesh(geometryBox, materialLambert);
 meshBox.position.setX(2);
 scene.add(meshBox);
+
+// Create our box mesh that uses our material
+const meshBoxCustom = new THREE.Mesh(geometryBoxCustom, materialLambertCustom);
+scene.add(meshBoxCustom);
 ```
 
-If you like the meshes to rotate, add the following in the animate function:
+If you like the meshes to rotate, add the following in the animate function or comment them out:
 
 ```javascript
 // Rotate the meshes in the x and y axis every frame
@@ -771,13 +791,15 @@ This is the result of the complete part. You should see the rendering of the kno
 
 ![figure](/media/docs/p13.png)
 
-By setting the light and object to a white (1,1,1) color, we can observe differences in shading. Our Lambert shading computation is performed per-fragment, and it produces a more accurate light value for each fragment that spans the mesh. On the other hand, computing the Lambert shading model per-vertex, and then interpolating the resulting light value across the fragments result in a noticeable shading pattern. Performing shading per-vertex usually yields a faster computation result, unless the number of vertices within the clip space is more than the number of fragments (pixels) in the frame buffer.
+By setting the light color and object material color to white, we can observe the differences in shading. Our Lambert shading computation is performed per-fragment, and it produces a more accurate light value at fragment of the mesh surface. On the other side, computing the Lambert shading model per-vertex and interpolating the resulting value across the fragments results in a noticeable shading pattern.
+
+Performing shading per-vertex is usually faster than computing shading per-fragment, however, the shading performance on modern GPUs is neglectable and nowadays, we are able to compute complex physically-based shading models at high performances.
 
 # Part 5: Texturing meshes
 
-Textures store data like colors, normals, or shader-specific parameters for rendering mesh surfaces. Often we use a texture image that stores diffuse color information, and retrieve the texel (texture 'pixel') color value at a UV coordinate location, and map it to a location on the mesh primitive.
+Textures store data like colors, normals, or shader-specific parameters for access in shaders. Often we use a texture image that stores diffuse color information, and sample the texture in shader at a UV coordinate location and map it to a location on the mesh surface.
 
-This is the 16x16 dirt PNG image that we will use, zoomed in:
+This is the 16x16 PNG image of a dirt block that we will use:
 
 ![figure](/media/docs/dirt_zm.png)
 
@@ -785,11 +807,11 @@ You can address a specific texel color value from the texture image by specifyin
 
 ![figure](/media/docs/uv.png)
 
-We can map locations on a mesh primitive to the UV texture coordinate by providing the UV coordinate for each fragment location on the mesh primitive. We can do this by providing the UV texture coordinates as a vertex attribute for each mesh vertices, access them in the vertex shader, and pass them to the fragment shader, where each fragment will have an interpolated UV coordinate at each location on the mesh primitive:
+To map texture color values to locations on a mesh primitive, we have to specify the UV texture coordinates at each mesh vertex, and access the interpolated values in the fragment shader. We can then sample the texture at each fragment of the mesh primitive using the interpolated UV coordinate at the fragment location.
 
 ![figure](/media/docs/uv2.png)
 
-- Let's define the UV vertex coordinate for each vertex of our custom box geometry `geometryBoxCustom`:
+- Let's define the UV vertex coordinate for each vertex of our custom box geometry `BufferGeometry`:
 
 ```javascript
 const texcoords = new Float32Array([
@@ -817,11 +839,11 @@ geometryBoxCustom.setAttribute("normal", new THREE.Float32BufferAttribute(normal
 geometryBoxCustom.setAttribute("uv", new THREE.Float32BufferAttribute(texcoords, 2));
 ```
 
-- We will use the three.js texture loader `TextureLoader` to load the texture image into memory. Remember to specify the texture's color space encoding as sRGB so that three.js will automatically convert the color data values from sRGB to linear for sampling in the fragment shader. We also set the minification and magnification filtering to the nearest neighbor filtering.
+- We will use the three.js `TextureLoader` object to load the texture image into memory. Remember to specify the texture's color space encoding as sRGB so that three.js will automatically convert the color data values from sRGB to linear for sampling in the fragment shader. We also set the minification and magnification filtering to the nearest neighbor filtering.
 
 ```javascript
 // Load a texture image
-const texture = new THREE.TextureLoader().load("../../media/dirt.png");
+const texture = new THREE.TextureLoader().load("../media/dirt.png");
 // Specify the color space encoding of the texture
 // It will be automatically transformed to linear space in Threejs shader
 texture.encoding = THREE.sRGBEncoding;
@@ -865,11 +887,7 @@ materialLambertCustom.vertexShader = `
 
     void main()
     {
-        // Transform positional vertices from object space to clip space
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-
-        // Transform normal vectors based on the object's model matrix
-        vNormal = matNormal * normal;
+        ...
 
         // Pass vertex uv to fragment
         vUv = uv;
@@ -891,12 +909,7 @@ materialLambertCustom.fragmentShader = `
 
     void main()
     {
-        // Compute the diffuse term based on the lambert shading model (N . L)
-        // Make sure all vector components are normalized to get a normalized value
-        vec3 lightPos = normalize(lightPosition);
-
-        // Note: Clamp to positive dot product values
-        float sLambert = max(dot(vNormal, lightPos), 0.0);
+        ...
 
         // Sample the texel color at vUv coordinate
         vec4 texDiffuse = texture(sDiffuse, vUv);
@@ -910,33 +923,18 @@ materialLambertCustom.fragmentShader = `
         vec3 color = (ambient + diffuse) * objColor * lightColor * texDiffuse.rgb;
         gl_FragColor = vec4(color, 1);
 
-        // Convert fragment color from linear space back to sRGB space
-        #include <encodings_fragment>
+        ...
     }
 `;
 ```
 
-- And also specify the diffuse texture uniform variable:
+- And also specify the `sDiffuse` uniform variable to use our loaded texture:
 
 ```javascript
 // Define the uniforms used in the shaders
 // Note: Makes sure color vectors are in the linear space before input into shaders (renderer will convert it back to sRGB space)
 materialLambertCustom.uniforms = {
-    matNormal: {
-        value: new THREE.Matrix3()
-    },
-    lightAmbientValue: {
-        value: 0.2
-    },
-    lightPosition: {
-        value: new THREE.Vector3(1, 1, 1)
-    },
-    lightColor: {
-        value: new THREE.Color(1, 1, 1).convertSRGBToLinear()
-    },
-    objColor: {
-        value: new THREE.Color(1, 1, 1).convertSRGBToLinear()
-    },
+    ...,
     sDiffuse: {
         value: texture
     }
@@ -994,11 +992,11 @@ void main()
 }
 ```
 
-We use the GLSL defined `texture` function to specify the texture sampler and the UV coordinate within the texture to get the RGBA color value. When writing a custom `ShaderMaterial`, we have to manually convert the texture color space encoding from sRGB to linear space using the three.js provided `sRGBToLinear` function. Once we have the texel color value, we multiply it with the diffuse and ambient term to get the final color value.
+We use the GLSL defined `texture` function to specify the texture sampler and the UV coordinate to fetch the RGBA color value. When writing a custom `ShaderMaterial`, we have to manually convert the texture color space encoding from sRGB to linear space using the three.js provided `sRGBToLinear` function. Once we have the texel color value, we multiply it with the diffuse and ambient term to get the final color value.
 
 # Part 6: Rendering a GLTF model
 
-In this last part, let's apply the concepts we have learned so far to render a complex 3D model. I have provided an interesting GLTF model of a real-life monastery, the "Mar Saba monastery". Its geometry and texture data are captured using ariel photogrammetry.
+In this last part, let's apply the concepts we have learned so far to render a complex 3D model. I have provided an interesting GLTF model of a real-life Mar Saba monastery. Its geometry and texture data are captured using an ariel photogrammetry process.
 
 - Three.js has provided a GLTF importer to import 3D models based on the GLTF specification (or format). Import the javascript to load GLTF models by adding this line in the HTML body section:
 
@@ -1019,17 +1017,17 @@ loader.load("../media/gltf/scene.gltf", (gltf) => {
 ```
 
 ![figure](/media/docs/p15.png)
-If you zoom out, you will be able to see the entire 3D model in the scene.
+Wait a while for the model to load. If you zoom out, you will be able to see the entire 3D model in the scene.
 
-The GLTF format can contain hierarchical scene descriptors or definitions of lights, cameras, and materials in addition to the 3D geometry (vertex, normal, UV) and texture data. The three.js's GLTF loader can interpret the GLTF scene descriptors and automatically create objects with suitable parameters. For example, the `MeshBasicMaterial` is applied to all meshes in the GLTF scene, with textures automatically supplied to the material's `map` property. Depending on what material property is defined in the GLTF, three.js may use the more appropriate `MeshStandardMaterial` as well. You can also choose to extract only the geometry for the vertex data, vertex attribute data, or texture images and create the mesh, geometry buffer, and material shaders yourself.
+The GLTF format can contain hierarchical scene descriptors or definitions of lights, cameras, materials (texture image data), and meshes (and each of their geometry - vertex, normal, UV array buffers). The GLTF loader interpret the GLTF scene descriptors and automatically creates objects with matching parameters. For example, the `MeshBasicMaterial` is applied to all meshes in the GLTF scene, with textures automatically supplied to the material's `map` property. Depending on the material definations in the GLTF file, three.js may use the more appropriate `MeshStandardMaterial` and configure the material properties. You can also choose to extract only the geometry data (vertex attribute arrays) or textures and create the mesh, geometry buffer, and material shaders yourself.
 
-- The last step, apply our custom lambert material shader to the GLTF mesh:
+- Let try out our custom lambert material shader on the loaded GLTF mesh:
 
 ```javascript
 // Import a gltf model
 // Source: https://sketchfab.com/3d-models/mar-saba-monastery-4bff096a20064d65b8af65ab8c51d9cf
 const loader = new THREE.GLTFLoader();
-loader.load("../../media/gltf/scene.gltf", (gltf) => {
+loader.load("../media/gltf/scene.gltf", (gltf) => {
     // Optional: Traverse the gltf scene and apply our material to all mesh objects
     // We also set materialLambertCustom to use the imported mesh's texture map.
     gltf.scene.traverse((mesh) => {
@@ -1046,9 +1044,11 @@ loader.load("../../media/gltf/scene.gltf", (gltf) => {
 });
 ```
 
-We also need to transform the geometry's vertex normals. Let's do it in the vertex shader and apply the model transformation matrix for convenience. As long as we scale the mesh in all three axes, the transformed normals will remain correct.
+In the code above, we traverse through the GLTF scene graph and apply our custom shader material to all meshes. We also need to transform each mesh's vertex normals as each mesh has been transformed using its own model matrix.
 
-- Replace the normal transformation matrix `matNormal` with:
+Let's update the vertex shader to apply the mesh's model transformation matrix to the mesh normals. As long as we don't scale the mesh in one or two axis, the transformed normals will be correct.
+
+- We multiply the normal vector with the model transformation matrix `matNormal`, ignoring the homogeneous coordinate components (translation) of the model matrix:
 
 ```glsl
 // Transform normal vectors based on the object's model matrix
@@ -1057,7 +1057,7 @@ vNormal = (modelMatrix * vec4(normal, 0)).xyz;
 
 ![figure](/media/docs/p16.png)
 
-Adjust the `materialLambertCustom` uniforms to change the light direction and colors to your liking.
+Try to adjust the `materialLambertCustom` uniform paramters to change the light direction and colors to your liking.
 
 # References and further reading
 

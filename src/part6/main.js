@@ -170,7 +170,7 @@ materialLambertCustom.vertexShader = `
 
         // Transform normal vectors based on the object's model matrix
         vNormal = (modelMatrix * vec4(normal, 0)).xyz;
-        // vNormal = matNormal * normal;
+        // vNormal = normalize(matNormal * normal);
 
         // Pass vertex uv to fragment
         vUv = uv;

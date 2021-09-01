@@ -143,7 +143,7 @@ materialLambertCustom.vertexShader = `
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 
         // Transform normal vectors based on the object's model matrix
-        vNormal = matNormal * normal;
+        vNormal = normalize(matNormal * normal);
     }
 `;
 
